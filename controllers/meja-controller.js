@@ -16,7 +16,6 @@ const validateMeja = async (input) => {
             .details
             .map(item => item.message)
             .join(`,`)
-
         return {
             status: false,
             message: message

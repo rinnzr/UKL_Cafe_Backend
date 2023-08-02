@@ -3,6 +3,9 @@ const transaksiModel = require(`../models/index`).transaksi;
 const detailModel = require(`../models/index`).detail_transaksi;
 const menuModel = require(`../models/index`).menu;
 const mejaModel = require(`../models/index`).meja;
+const { fn, col, literal } = require('sequelize');
+
+//tambah transaksi
 exports.addTransaksi = async (request, response) => {
   try {
     let transaksi = {
@@ -37,18 +40,10 @@ exports.addTransaksi = async (request, response) => {
       if (transaksi.status === "belum_bayar") {
         // Ubah status meja menjadi "kosong"
         await mejaModel.update(
-          { status: 'terisi' },
+          { status: "terisi" },
           { where: { id_meja: transaksi.id_meja } }
         );
-      } 
-      // else {
-      //   // Ubah status meja menjadi "terisi"
-      //   await mejaModel.update(
-      //     { status: 'kosong' },
-      //     { where: { id_meja: transaksi.id_meja } }
-      //   );
-      // }
-
+      }
       return response.json({
         status: true,
         insertTransaksi,
@@ -62,9 +57,7 @@ exports.addTransaksi = async (request, response) => {
     });
   }
 };
-
-
-// 
+//
 // exports.updateTransaksi = async (request, response) => {
 //   try {
 //     const id_transaksi = request.params.id_transaksi;
@@ -108,6 +101,7 @@ exports.addTransaksi = async (request, response) => {
 //     });
 //   }
 // };
+// update transaksi
 exports.updateTransaksi = async (request, response) => {
   try {
     const id_transaksi = request.params.id_transaksi;
@@ -116,29 +110,29 @@ exports.updateTransaksi = async (request, response) => {
     };
     const transaksi = await transaksiModel.findByPk(id_transaksi);
     if (!transaksi) {
-      throw new Error('Transaksi not found.');
+      throw new Error("Transaksi not found.");
     }
-    
+
     const id_meja = transaksi.id_meja;
-    
+
     await transaksiModel.update(newData, {
       where: { id_transaksi },
     });
-    
-    if (request.body.status === 'lunas') {
+
+    if (request.body.status === "lunas") {
       const [updated] = await Promise.all([
-        mejaModel.update({ status: 'kosong' }, { where: { id_meja } }),
+        mejaModel.update({ status: "kosong" }, { where: { id_meja } }),
         // detailModel.bulkCreate(arrayDetail, { updateOnDuplicate: ['id_detail_transaksi'] }),
       ]);
-      
+
       if (updated[0] === 0) {
-        throw new Error('Failed to update meja status.');
+        throw new Error("Failed to update meja status.");
       }
-    } 
-    
+    }
+
     return response.json({
       status: true,
-      message: 'Data transaksi berhasil diubah',
+      message: "Data transaksi berhasil diubah",
     });
   } catch (error) {
     return response.json({
@@ -148,7 +142,7 @@ exports.updateTransaksi = async (request, response) => {
   }
 };
 
-
+// update status transaksi
 exports.updatestatus = async (request, response) => {
   try {
     const id_transaksi = request.params.id_transaksi;
@@ -158,20 +152,20 @@ exports.updatestatus = async (request, response) => {
     // Update the status of the transaction
     await transaksiModel.update({ status }, { where: { id_transaksi } });
 
-    if (status === 'lunas') {
+    if (status === "lunas") {
       // Update the status of the meja to "kosong"
       const [updated] = await mejaModel.update(
-        { status: 'kosong' },
+        { status: "kosong" },
         { where: { id_meja } }
       );
       if (!updated) {
-        throw new Error('Failed to update meja status.');
+        throw new Error("Failed to update meja status.");
       }
     }
 
     return response.json({
       status: true,
-      message: 'Status transaksi berhasil diperbarui',
+      message: "Status transaksi berhasil diperbarui",
     });
   } catch (error) {
     return response.json({
@@ -181,21 +175,22 @@ exports.updatestatus = async (request, response) => {
   }
 };
 
+//hapus transaksi
 exports.deleteTransaksi = async (request, response) => {
   try {
     let id_transaksi = request.params.id_transaksi;
     let id_transaksis = request.params.id_transaksi;
-   let transakasis =  await transaksiModel.findOne({
-    where:{
-        id_transaksi : id_transaksis
-    }
+    let transakasis = await transaksiModel.findOne({
+      where: {
+        id_transaksi: id_transaksis,
+      },
     });
     await detailModel.destroy({ where: { id_transaksi: id_transaksi } });
     await transaksiModel.destroy({ where: { id_transaksi: id_transaksi } });
     await mejaModel.update({
-        where : {
-            id_meja : transakasis.id_meja
-        }
+      where: {
+        id_meja: transakasis.id_meja,
+      },
     });
     return response.json({
       status: true,
@@ -208,6 +203,8 @@ exports.deleteTransaksi = async (request, response) => {
     });
   }
 };
+
+//get semua data transaksi
 exports.getTransaksi = async (request, response) => {
   try {
     let result = await transaksiModel.findAll({
@@ -219,6 +216,8 @@ exports.getTransaksi = async (request, response) => {
           as: "detail_transaksi",
           include: ["menu"],
         },
+      ], order: [
+        ["id_transaksi", "DESC"]
       ],
     });
     return response.json({
@@ -233,8 +232,9 @@ exports.getTransaksi = async (request, response) => {
   }
 };
 
-const { Op } = require('sequelize');
+const { Op } = require("sequelize");
 
+// get data transaksi berdasarkan tanggal
 exports.getTgl = async (req, res) => {
   const { tgl_transaksi } = req.params;
 
@@ -282,15 +282,16 @@ exports.getTgl = async (req, res) => {
   }
 };
 
-
+// get data transaksi berdasarkan bulan
 exports.getBulan = async (req, res) => {
   const { tgl_transaksi } = req.body;
 
   // Check if tgl_transaksi is a valid date in format YYYY-MM
   if (!/^\d{4}-\d{2}$/.test(tgl_transaksi)) {
     return res.status(400).json({
-      status: 'error',
-      message: 'Invalid date format. Please provide the date in YYYY-MM format.',
+      status: "error",
+      message:
+        "Invalid date format. Please provide the date in YYYY-MM format.",
     });
   }
 
@@ -310,32 +311,197 @@ exports.getBulan = async (req, res) => {
         },
       },
       include: [
-        'meja',
-        'user',
+        "meja",
+        "user",
         {
           model: detailModel,
-          as: 'detail_transaksi',
-          include: ['menu'],
+          as: "detail_transaksi",
+          include: ["menu"],
         },
       ],
     });
 
     if (result.length === 0) {
       res.status(404).json({
-        status: 'error',
-        message: 'Data tidak ditemukan',
+        status: "error",
+        message: "Data tidak ditemukan",
       });
     } else {
       res.status(200).json({
-        status: 'success',
-        message: 'Data ditemukan',
+        status: "success",
+        message: "Data ditemukan",
         data: result,
       });
     }
   } catch (error) {
     res.status(500).json({
-      status: 'error',
+      status: "error",
       message: error.message,
     });
   }
 };
+// get transaksi by id user
+exports.getUser = async (req, res) => {
+  // endpoint untuk mengambil data transaksi berdasarkan id user
+  try {
+    const result = await transaksiModel.findAll({
+      where: { id_user: req.params.id_user },
+      include: ["user", "meja"],
+      order: [["id_transaksi", "DESC"]],
+    });
+
+    if (result) {
+      res.status(200).json({
+        status: "success",
+        data: result,
+      });
+    } else {
+      res.status(404).json({
+        status: "error",
+        message: "data tidak ditemukan",
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+// get data transaksi sesuai nama user
+exports.getNamaUser = async (req, res) => {
+  try {
+    const param = { nama_user: req.params.nama_user };
+    const userResult = await userModel.findAll({
+      where: {
+        nama_user: param.nama_user,
+      },
+    });
+    if (userResult.length == null) {
+      res.status(404).json({
+        status: "error",
+        message: "data tidak ditemukan",
+      });
+      return;
+    }
+    const transaksiResult = await transaksiModel.findAll({
+      where: {
+        id_user: userResult[0].id_user,
+      },
+    });
+    if (transaksiResult.length === 0) {
+      res.status(404).json({
+        status: "error",
+        message: "data tidak ditemukan",
+      });
+      return;
+    }
+    res.status(200).json({
+      status: "success",
+      message: "data ditemukan",
+      data: transaksiResult,
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+// get data menu yang paling sedikit
+exports.getMenu = async (req, res) => {
+  // endpoint untuk mengambil semua data detail_transaksi berdasarkan id_transaksi
+  try {
+    const result = await detailModel.findAll({
+      attributes: [
+        'id_menu',
+        [fn("SUM", col("detail_transaksi.jumlah")), "jumlah"],
+      ],
+      include: [
+        {
+          model: menuModel,
+          as: 'menu'
+        }
+      ],
+      group: ["id_menu"],
+      order: [[literal("jumlah"), "DESC"]],
+    }); // mengambil semua data detail_transaksi
+    res.status(200).json({
+      status: "success",
+      data: result,
+    });
+  } catch (error) {
+    res.status(400).json({
+      message: error.message,
+    });
+  }
+};
+
+// mencari total pendapatan berdasarkan tanggal
+exports.getPendapatanTgl= async (req, res) => { 
+  try{
+    const param = { tgl_transaksi: req.params.tgl_transaksi }; 
+    const result= await detailModel.findAll({
+      attributes: [
+        [fn('SUM', col('detail_transaksi.harga')), 'pendapatan']
+      ],
+      include: [
+        {
+          model: transaksiModel,
+          as: 'transaksi',
+          where: {
+            tgl_transaksi: {
+              [Op.between]: [
+                param.tgl_transaksi + " 00:00:00",
+                param.tgl_transaksi + " 23:59:59",
+              ], 
+            }
+          },
+        }
+      ],
+      group: ['detail_transaksi.id_transaksi']
+    })
+      res.status(200).json({ 
+        status: "success",
+        data: result,
+        total_keseluruhan: result.reduce((a, b) => a + parseInt(b.dataValues.pendapatan), 0)
+      });
+  }catch(error) { 
+      res.status(400).json({ 
+        status: "error",
+        message: error.message,
+      });
+    };
+};
+//pendapatan bulan
+exports.getPendapatanBln= async (req, res) => { 
+  try{ 
+    const param = { tgl_transaksi: req.params.tgl_transaksi }; 
+    const result = await detailModel.findAll({
+      attributes: [
+        [fn('SUM', col('detail_transaksi.harga')), 'pendapatan']
+      ],
+      include: [
+        {
+          model: transaksiModel,
+          as: 'transaksi',
+          where: literal(`MONTH(tgl_transaksi) = ${param.tgl_transaksi}`)
+        }
+      ],
+      group: ['detail_transaksi.id_transaksi']
+    }) 
+    
+      res.status(200).json({ 
+        status: "success",
+        data: result,
+        total_keseluruhan: result.reduce((a, b) => a + parseInt(b.dataValues.pendapatan), 0) 
+      });
+  }catch(error) { 
+      res.status(400).json({ 
+        status: "error",
+        message: error.message,
+      });
+    };
+};
+
