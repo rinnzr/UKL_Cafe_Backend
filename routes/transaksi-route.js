@@ -9,7 +9,7 @@ const { authorize } = require(`../controllers/auth-controller`)
 
 app.get(`/transaksi`, transaksiController.getTransaksi)
 app.get(`/transaksi/:tgl_transaksi`, transaksiController.getTgl)
-app.post(`/transaksi/bulan`,[authorize], transaksiController.getBulan)
+app.get(`/transaksi/bulan/:tgl_transaksi`,[authorize], transaksiController.getBulan)
 app.post(`/transaksi`,[authorize], transaksiController.addTransaksi)
 app.put(`/transaksi/:id_transaksi`,[authorize], transaksiController.updateTransaksi)
 app.put(`/transaksi/:id_transaksi`,[authorize], transaksiController.updatestatus)
@@ -18,7 +18,7 @@ app.get(`/transaksi/getmenu`,[authorize], transaksiController.getMenu)
 app.get(`/transaksi/user/:id_user`,[authorize], transaksiController.getUser)
 app.get(`/transaksi/namauser/:nama_user`,[authorize], transaksiController.getNamaUser)
 app.get(`/transaksi/pendapatantgl/:tgl_transaksi`,[authorize], transaksiController.getPendapatanTgl)
-app.get(`/transaksi/pendapatanbln/:tgl_transaksi`,[authorize], transaksiController.getPendapatanBln)
+app.get(`/transaksi/pendapatanbln/:tgl_transaksi`,[authorize], transaksiController.pendapatanBln)
 
 
 module.exports = app

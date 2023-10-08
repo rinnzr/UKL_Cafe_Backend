@@ -284,7 +284,7 @@ exports.getTgl = async (req, res) => {
 
 // get data transaksi berdasarkan bulan
 exports.getBulan = async (req, res) => {
-  const { tgl_transaksi } = req.body;
+  const { tgl_transaksi } = req.params;
 
   // Check if tgl_transaksi is a valid date in format YYYY-MM
   if (!/^\d{4}-\d{2}$/.test(tgl_transaksi)) {
@@ -411,7 +411,6 @@ exports.getNamaUser = async (req, res) => {
 
 // get data menu yang paling sedikit
 exports.getMenu = async (req, res) => {
-  // endpoint untuk mengambil semua data detail_transaksi berdasarkan id_transaksi
   try {
     const result = await detailModel.findAll({
       attributes: [
@@ -475,33 +474,44 @@ exports.getPendapatanTgl= async (req, res) => {
     };
 };
 //pendapatan bulan
-exports.getPendapatanBln= async (req, res) => { 
-  try{ 
-    const param = { tgl_transaksi: req.params.tgl_transaksi }; 
-    const result = await detailModel.findAll({
+exports.pendapatanBln = async (req, res) => {
+  const param = { tgl_transaksi: req.params.tgl_transaksi };
+  try {
+    const result = await model.transaksi.findAll({
       attributes: [
         [fn('SUM', col('detail_transaksi.harga')), 'pendapatan']
       ],
       include: [
         {
-          model: transaksiModel,
-          as: 'transaksi',
-          where: literal(`MONTH(tgl_transaksi) = ${param.tgl_transaksi}`)
+          model: detail_transaksi,
+          as: 'detail_transaksi',
+          attributes: [] // Anda bisa menambahkan atribut yang ingin Anda ambil di sini
         }
       ],
-      group: ['detail_transaksi.id_transaksi']
-    }) 
-    
-      res.status(200).json({ 
+      where: literal(`MONTH(tgl_transaksi) = ${param.tgl_transaksi}`),
+      group: ['transaksi.id_transaksi']
+    });
+
+    if (result.length === 0) {
+      res.status(404).json({
+        status: "error",
+        message: "Data tidak ditemukan",
+      });
+    } else {
+      const total_keseluruhan = result.reduce((a, b) => a + parseInt(b.dataValues.pendapatan), 0);
+      res.status(200).json({
         status: "success",
         data: result,
-        total_keseluruhan: result.reduce((a, b) => a + parseInt(b.dataValues.pendapatan), 0) 
+        total_keseluruhan: total_keseluruhan,
       });
-  }catch(error) { 
-      res.status(400).json({ 
-        status: "error",
-        message: error.message,
-      });
-    };
+    }
+  } catch (error) {
+    res.status(400).json({
+      status: "error",
+      message: error.message,
+    });
+  }
 };
+
+
 
